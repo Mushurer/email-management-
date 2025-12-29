@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Cases - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: #1e3a8a;">All Cases</h1>
+    {% if current_user.has_permission('staff') %}
+    <a href="{{ url_for('add_case') }}" class="btn btn-primary">New Case</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    {% if cases %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Case #</th>
+                <th>Student</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Reported By</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in cases %}
+            <tr>
+                <td><strong>{{ case.case_number }}</strong></td>
+                <td>
+                    {% if case.first_name %}
+                        {{ case.first_name }} {{ case.last_name }}
+                        <br><small style="color: #6b7280;">{{ case.student_reg_number }}</small>
+                    {% else %}
+                        {{ case.student_reg_number }}
+                    {% endif %}
+                </td>
+                <td>{{ case.case_type_name or 'N/A' }}</td>
+                <td>{{ case.description[:50] }}{% if case.description|length > 50 %}...{% endif %}</td>
+                <td>
+                    <span class="status-badge status-{{ case.status }}">
+                        {{ case.status.replace('_', ' ').title() }}
+                    </span>
+                </td>
+                <td>{{ case.reported_by_name }}</td>
+                <td>{{ case.created_at[:10] }}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ url_for('case_detail', case_id=case.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                        {% if current_user.can_update_case_status() %}
+                        <form method="POST" action="{{ url_for('update_case_status') }}" style="display: inline; margin-left: 5px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="case_id" value="{{ case.id }}">
+                            <select name="status" class="form-select" style="width: auto; display: inline-block; font-size: 0.8rem;" onchange="handleStatusChange(this)">
+                                <option value="pending" {% if case.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="waiting_hearing" {% if case.status == 'waiting_hearing' %}selected{% endif %}>Waiting Hearing</option>
+                                <option value="blacklisted" {% if case.status == 'blacklisted' %}selected{% endif %}>Blacklisted</option>
+                                <option value="exonerated" {% if case.status == 'exonerated' %}selected{% endif %}>Exonerated</option>
+                                <option value="resolved" {% if case.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                            </select>
+                            <div id="exoneration-reason-{{ case.id }}" style="display: none; margin-top: 10px;">
+                                <textarea name="exoneration_reason" placeholder="Reason for exoneration..." class="form-control form-control-sm" rows="2"></textarea>
+                                <button type="submit" class="btn btn-sm btn-success mt-1">Confirm Exoneration</button>
+                            </div>
+                        </form>
+                        {% endif %}
+
+                        {% if current_user.role == 'admin' %}
+                        <!-- Delete case form (admin only) -->
+                        <form method="POST" action="{{ url_for('delete_case', case_id=case.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Are you sure you want to delete case {{ case.case_number }}? This action cannot be undone and will permanently remove all case data including attached files.')">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="text-center" style="padding: 2rem; color: #6b7280;">
+        <p>No cases found.</p>
+        {% if current_user.has_permission('staff') %}
+        <a href="{{ url_for('add_case') }}" class="btn btn-primary mt-2">Create First Case</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleStatusChange(selectElement) {
+    const caseId = selectElement.form.querySelector('input[name="case_id"]').value;
+    const exonerationDiv = document.getElementById('exoneration-reason-' + caseId);
+
+    if (selectElement.value === 'exonerated') {
+        exonerationDiv.style.display = 'block';
+        // Prevent immediate form submission for exonerated status
+    } else {
+        exonerationDiv.style.display = 'none';
+        // Submit form immediately for other statuses
+        selectElement.form.submit();
+    }
+}
+</script>
+{% endblock %}

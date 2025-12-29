@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}System Health Dashboard - DMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-heart-pulse text-primary"></i> System Health Dashboard</h1>
+                <button class="btn btn-outline-primary" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if health.error %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i> Error retrieving system metrics: {{ health.error }}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-database-fill fs-1"></i>
+                    <h5 class="card-title mt-2">Database</h5>
+                    <div class="d-flex justify-content-between">
+                        <span class="health-indicator health-ok"></span>
+                        <span>{{ health.database.status.title() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-speedometer2 fs-1"></i>
+                    <h5 class="card-title mt-2">Performance</h5>
+                    <div class="d-flex justify-content-between">
+                        <span class="health-indicator {{ 'health-ok' if health.performance.error_rate < 5 else 'health-warning' if health.performance.error_rate < 15 else 'health-error' }}"></span>
+                        <span>{{ health.performance.error_rate }}% error rate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-cpu fs-1"></i>
+                    <h5 class="card-title mt-2">System Resources</h5>
+                    <div class="d-flex justify-content-between">
+                        <span class="health-indicator {{ 'health-ok' if health.system.cpu_percent < 70 else 'health-warning' if health.system.cpu_percent < 90 else 'health-error' }}"></span>
+                        <span>{{ health.system.cpu_percent }}% CPU</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <i class="bi bi-envelope fs-1"></i>
+                    <h5 class="card-title mt-2">Email System</h5>
+                    <div class="d-flex justify-content-between">
+                        <span class="health-indicator {{ 'health-ok' if health.email.status == 'healthy' else 'health-warning' }}"></span>
+                        <span>{{ health.email.status.title() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-graph-up"></i> Database Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="text-primary">{{ health.database.total_cases }}</h3>
+                            <small class="text-muted">Total Cases</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-info">{{ health.database.total_students }}</h3>
+                            <small class="text-muted">Students</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-success">{{ health.database.total_users }}</h3>
+                            <small class="text-muted">Active Users</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-stopwatch"></i> Performance Metrics (Last Hour)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="text-primary">{{ health.performance.avg_response_time }}ms</h3>
+                            <small class="text-muted">Avg Response Time</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-warning">{{ health.performance.error_rate }}%</h3>
+                            <small class="text-muted">Error Rate</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-info">{{ health.performance.total_requests_hour }}</h3>
+                            <small class="text-muted">Total Requests</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-server"></i> System Resources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">CPU Usage</label>
+                        <div class="progress">
+                            <div class="progress-bar {{ 'bg-success' if health.system.cpu_percent < 70 else 'bg-warning' if health.system.cpu_percent < 90 else 'bg-danger' }}" 
+                                 style="width: {{ health.system.cpu_percent }}%">
+                                {{ health.system.cpu_percent }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Memory Usage</label>
+                        <div class="progress">
+                            <div class="progress-bar {{ 'bg-success' if health.system.memory_percent < 70 else 'bg-warning' if health.system.memory_percent < 90 else 'bg-danger' }}" 
+                                 style="width: {{ health.system.memory_percent }}%">
+                                {{ "%.1f"|format(health.system.memory_percent) }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Disk Usage</label>
+                        <div class="progress">
+                            <div class="progress-bar {{ 'bg-success' if health.system.disk_percent < 70 else 'bg-warning' if health.system.disk_percent < 90 else 'bg-danger' }}" 
+                                 style="width: {{ health.system.disk_percent }}%">
+                                {{ "%.1f"|format(health.system.disk_percent) }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-envelope-check"></i> Email System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-{{ 'success' if health.email.status == 'healthy' else 'warning' }}">
+                        <i class="bi bi-{{ 'check-circle' if health.email.status == 'healthy' else 'exclamation-triangle' }}"></i>
+                        Email system is {{ health.email.status }}
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-12">
+                            <h4 class="text-{{ 'success' if health.email.failed_count_24h < 5 else 'warning' if health.email.failed_count_24h < 10 else 'danger' }}">
+                                {{ health.email.failed_count_24h }}
+                            </h4>
+                            <small class="text-muted">Failed emails (24h)</small>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('email_logs') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-list-ul"></i> View Email Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

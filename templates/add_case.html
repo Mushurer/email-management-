@@ -1,0 +1,135 @@
+
+{% extends "base.html" %}
+
+{% block title %}New Case - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: #1e3a8a;">New Case</h1>
+    <a href="{{ url_for('cases') }}" class="btn btn-secondary">Back to Cases</a>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <label for="student_reg_number">Student Registration Number</label>
+            <input type="text" class="form-control" id="student_reg_number" name="student_reg_number" 
+                   placeholder="e.g., R228905P" pattern="R\d{6}[A-Z]" title="Format: R followed by 6 digits and a letter (e.g., R228905P)" required>
+            <small style="color: #6b7280;">Format: R followed by 6 digits and a letter (e.g., R228905P)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="student_first_name">Student First Name</label>
+            <input type="text" class="form-control" id="student_first_name" name="student_first_name" 
+                   placeholder="Enter student's first name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="student_last_name">Student Last Name</label>
+            <input type="text" class="form-control" id="student_last_name" name="student_last_name" 
+                   placeholder="Enter student's last name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="student_email">Student Email</label>
+            <input type="email" class="form-control" id="student_email" name="student_email" 
+                   placeholder="Will auto-generate if not provided">
+            <small style="color: #6B7280;">Email will be auto-generated based on registration number if not provided</small>
+        </div>
+
+        <div class="form-group">
+            <label for="case_type_id">Case Type</label>
+            <select class="form-select" id="case_type_id" name="case_type_id" required>
+                <option value="">Select Case Type</option>
+                {% for case_type in case_types %}
+                <option value="{{ case_type.id }}">{{ case_type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="department">Department</label>
+            <select class="form-select" id="department" name="department" required>
+                <option value="">Select Department</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}">{{ dept }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="5" required placeholder="Detailed description of the incident..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="case_file">Case File (Optional)</label>
+            <input type="file" class="form-control" id="case_file" name="case_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+            <small style="color: #6b7280;">Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 16MB)</small>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Create Case</button>
+            <a href="{{ url_for('cases') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Load student data from database when registration number is entered
+document.getElementById('student_reg_number').addEventListener('blur', function() {
+    const regNumber = this.value.trim().toUpperCase();
+    
+    if (!regNumber) return;
+    
+    // Clear loading state
+    const firstNameField = document.getElementById('student_first_name');
+    const lastNameField = document.getElementById('student_last_name');
+    const emailField = document.getElementById('student_email');
+    
+    // Show loading state
+    firstNameField.style.backgroundColor = '#f3f4f6';
+    lastNameField.style.backgroundColor = '#f3f4f6';
+    emailField.style.backgroundColor = '#f3f4f6';
+    
+    // Fetch student data from API
+    fetch(`/api/student/${regNumber}`)
+        .then(response => response.json())
+        .then(data => {
+            // Reset background colors
+            firstNameField.style.backgroundColor = '';
+            lastNameField.style.backgroundColor = '';
+            emailField.style.backgroundColor = '';
+            
+            if (data.exists) {
+                // Student exists in database - populate fields
+                firstNameField.value = data.first_name;
+                lastNameField.value = data.last_name;
+                emailField.value = data.email;
+                
+                // Make fields readonly since data is from database
+                firstNameField.style.borderColor = '#10b981';
+                lastNameField.style.borderColor = '#10b981';
+                emailField.style.borderColor = '#10b981';
+            } else {
+                // Student doesn't exist - auto-generate email
+                if (!emailField.value) {
+                    emailField.value = data.email;
+                }
+                // Reset border colors for manual entry
+                firstNameField.style.borderColor = '';
+                lastNameField.style.borderColor = '';
+                emailField.style.borderColor = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching student data:', error);
+            // Reset background colors on error
+            firstNameField.style.backgroundColor = '';
+            lastNameField.style.backgroundColor = '';
+            emailField.style.backgroundColor = '';
+        });
+});
+</script>
+{% endblock %}

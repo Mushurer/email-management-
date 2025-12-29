@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 style="color: #2563eb;">System Settings</h1>
+    <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Admin Panel
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Admin Recovery Email Section -->
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-exclamation"></i> Admin Account Recovery
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if not admin_recovery_email %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Warning:</strong> No recovery email configured! If admin accounts get locked, recovery will not be possible.
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i>
+                    <strong>Recovery email configured:</strong> {{ admin_recovery_email }}
+                </div>
+                {% endif %}
+                
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="admin_recovery_email" class="form-label">
+                            <strong><i class="bi bi-envelope"></i> Admin Recovery Email Address</strong>
+                        </label>
+                        <input type="email" 
+                               class="form-control form-control-lg" 
+                               id="admin_recovery_email" 
+                               name="admin_recovery_email"
+                               value="{{ admin_recovery_email }}"
+                               placeholder="admin.recovery@yourdomain.com"
+                               required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <strong>Important:</strong> After 5 failed login attempts, admin accounts are automatically locked and a temporary password will be sent to this email address for recovery.
+                        </div>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded mb-3">
+                        <h6 class="text-primary"><i class="bi bi-gear"></i> How Recovery Works:</h6>
+                        <ol class="mb-0 small">
+                            <li>Admin account gets locked after <span class="badge bg-danger">5 failed attempts</span></li>
+                            <li>System automatically generates a <span class="badge bg-warning text-dark">temporary password</span></li>
+                            <li>Temporary password is sent to the recovery email configured below</li>
+                            <li>Admin can login with the temporary password (valid for <span class="badge bg-info">30 minutes</span>)</li>
+                            <li>System forces password change on first login with temporary password</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="admin_password" class="form-label">
+                            <strong>Change Admin Password</strong>
+                        </label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="admin_password" 
+                               name="admin_password"
+                               placeholder="Leave blank to keep current password">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i>
+                            Only enter a new password if you want to change it. Leave blank to keep the current password.
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Update Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Security Information -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-shield-check"></i> Security Policy
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong><i class="bi bi-lock"></i> Failed Login Policy:</strong>
+                    <p class="small mb-2">Accounts are locked after <span class="badge bg-warning text-dark">5 failed attempts</span></p>
+                </div>
+                
+                <div class="mb-3">
+                    <strong><i class="bi bi-clock"></i> Lock Duration:</strong>
+                    <p class="small mb-2">Accounts are locked for <span class="badge bg-secondary">30 minutes</span></p>
+                </div>
+                
+                <div class="mb-3">
+                    <strong><i class="bi bi-key"></i> Admin Recovery:</strong>
+                    <p class="small mb-2">
+                        Temporary passwords are automatically sent to the recovery email when admin accounts are locked.
+                    </p>
+                </div>
+                
+                <div class="mb-3">
+                    <strong><i class="bi bi-stopwatch"></i> Temp Password:</strong>
+                    <p class="small mb-0">
+                        Temporary passwords expire in <span class="badge bg-info">30 minutes</span> and force password change on first use.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recovery Status -->
+        <div class="card mt-3">
+            <div class="card-header {% if admin_recovery_email %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-{% if admin_recovery_email %}check-circle{% else %}exclamation-triangle{% endif %}"></i> Recovery Status
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if admin_recovery_email %}
+                <div class="text-success">
+                    <i class="bi bi-check-circle"></i> <strong>Recovery Enabled</strong>
+                    <p class="small mb-0 text-muted">Admin accounts can be recovered automatically via email.</p>
+                </div>
+                {% else %}
+                <div class="text-danger">
+                    <i class="bi bi-x-circle"></i> <strong>Recovery Disabled</strong>
+                    <p class="small mb-0">Please configure a recovery email address above to enable automatic admin account recovery.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Color Scheme Information -->
+        <div class="card mt-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-palette"></i> Theme Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Primary Color:</strong> 
+                    <span class="badge bg-primary">#2563eb Blue</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Theme Mode:</strong> 
+                    <span class="badge bg-secondary">Light/Dark Toggle</span>
+                </div>
+                <p class="small mb-0 text-muted">
+                    The system uses a blue-based color scheme for a professional and trustworthy appearance.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Authorized Domains Management -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Authorized Domains</h3>
+    </div>
+    <div class="card-body">
+        <p>Manage which domains are authorized to access the external API.</p>
+        
+        <!-- Add New Domain -->
+        <form method="POST" class="mb-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="url" name="new_domain" class="form-control" 
+                           placeholder="https://student-portal.university.edu" required>
+                    <small class="text-muted">Enter the full URL of the application that will access the API</small>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">Add Domain</button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Current Domains -->
+        {% if authorized_domains %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Domain URL</th>
+                    <th>Description</th>
+                    <th>Added</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain in authorized_domains %}
+                <tr>
+                    <td><code>{{ domain.setting_value }}</code></td>
+                    <td>{{ domain.description }}</td>
+                    <td>{{ domain.updated_at[:16] }}</td>
+                    <td>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="remove_domain" value="{{ domain.setting_value }}">
+                            <button type="submit" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Remove this domain?')">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert alert-info">
+            No authorized domains configured. Add domains above to allow external applications to access the API.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Integration Code Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Integration Code for External Applications</h3>
+    </div>
+    <div class="card-body">
+        <p>Copy these HTML code snippets to integrate with external applications:</p>
+        
+        <h5>1. Registration Number Check Function</h5>
+        <pre class="bg-light p-3"><code>&lt;script&gt;
+async function checkRegNumber(regNumber) {
+    const dmsUrl = '{{ request.url_root }}';
+    const currentDomain = window.location.origin;
+    
+    try {
+        const response = await fetch(dmsUrl + 'api/external/check-student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reg_number: regNumber,
+                domain: currentDomain
+            })
+        });
+        
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Error checking registration:', error);
+        return { exists: false, status: 'error' };
+    }
+}
+&lt;/script&gt;</code></pre>
+
+        <h5>2. Accommodation Button Integration</h5>
+        <pre class="bg-light p-3"><code>&lt;script&gt;
+async function handleAccommodationAccess(regNumber, originalAccommodationUrl) {
+    const checkResult = await checkRegNumber(regNumber);
+    
+    if (checkResult.exists && checkResult.status === 'blacklisted') {
+        // Show blacklisted message
+        document.getElementById('accommodationButton').innerHTML = 
+            '&lt;span style="color: red; font-weight: bold;"&gt;BLACKLISTED&lt;/span&gt;';
+        document.getElementById('accommodationButton').disabled = true;
+        alert('Access denied: Student is blacklisted due to disciplinary issues.');
+        return false;
+    } else {
+        // Proceed to original accommodation page
+        window.location.href = originalAccommodationUrl;
+        return true;
+    }
+}
+
+// Usage: Add this to your accommodation button
+// &lt;button id="accommodationButton" onclick="handleAccommodationAccess('R123456A', '/accommodation-page')"&gt;
+//     Access Accommodation
+// &lt;/button&gt;
+&lt;/script&gt;</code></pre>
+
+        <h5>3. Complete Integration Example</h5>
+        <pre class="bg-light p-3"><code>&lt;!-- Add this to your external application's HTML --&gt;
+&lt;div id="studentAccommodation"&gt;
+    &lt;input type="text" id="regNumberInput" placeholder="Enter Registration Number (R123456A)" 
+           pattern="R[0-9]{6}[A-Z]" required&gt;
+    &lt;button id="accommodationButton" onclick="checkAndProceed()"&gt;Access Accommodation&lt;/button&gt;
+    &lt;div id="statusMessage"&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+async function checkRegNumber(regNumber) {
+    const dmsUrl = '{{ request.url_root }}';
+    const currentDomain = window.location.origin;
+    
+    try {
+        const response = await fetch(dmsUrl + 'api/external/check-student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reg_number: regNumber,
+                domain: currentDomain
+            })
+        });
+        return await response.json();
+    } catch (error) {
+        return { exists: false, status: 'error' };
+    }
+}
+
+async function checkAndProceed() {
+    const regNumber = document.getElementById('regNumberInput').value.trim().toUpperCase();
+    const statusDiv = document.getElementById('statusMessage');
+    const button = document.getElementById('accommodationButton');
+    
+    if (!regNumber.match(/^R[0-9]{6}[A-Z]$/)) {
+        statusDiv.innerHTML = '&lt;span style="color: red;"&gt;Invalid registration number format&lt;/span&gt;';
+        return;
+    }
+    
+    statusDiv.innerHTML = 'Checking...';
+    button.disabled = true;
+    
+    const result = await checkRegNumber(regNumber);
+    
+    if (result.exists && result.status === 'blacklisted') {
+        statusDiv.innerHTML = '&lt;span style="color: red; font-weight: bold;"&gt;BLACKLISTED - Access Denied&lt;/span&gt;';
+        button.innerHTML = 'BLACKLISTED';
+        button.style.backgroundColor = 'red';
+        button.style.color = 'white';
+    } else {
+        statusDiv.innerHTML = '&lt;span style="color: green;"&gt;Access granted&lt;/span&gt;';
+        // Redirect to original accommodation page
+        window.location.href = '/your-original-accommodation-page';
+    }
+    
+    button.disabled = false;
+}
+&lt;/script&gt;</code></pre>
+
+        <div class="alert alert-warning">
+            <h6>Integration Instructions:</h6>
+            <ol>
+                <li>Add the authorized domain URL above (e.g., https://student-portal.university.edu)</li>
+                <li>Copy the appropriate code snippet to your external application</li>
+                <li>Replace '/your-original-accommodation-page' with your actual accommodation page URL</li>
+                <li>Test the integration to ensure it works correctly</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

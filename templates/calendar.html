@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar - Schedule Hearings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-calendar-event text-primary"></i> Calendar & Scheduling</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                    <i class="bi bi-plus-circle"></i> Schedule Event
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Events -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-calendar3"></i> Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                    {% if events %}
+                        {% for event in events %}
+                        <div class="calendar-event mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-{{ 'gavel' if event.event_type == 'hearing' else 'calendar-event' }}"></i>
+                                        {{ event.title }}
+                                    </h6>
+                                    <p class="text-muted mb-1">
+                                        <i class="bi bi-clock"></i> {{ event.start_datetime }} - {{ event.end_datetime }}
+                                    </p>
+                                    {% if event.location %}
+                                    <p class="text-muted mb-1">
+                                        <i class="bi bi-geo-alt"></i> {{ event.location }}
+                                    </p>
+                                    {% endif %}
+                                    {% if event.case_number %}
+                                    <p class="text-muted mb-1">
+                                        <i class="bi bi-folder"></i> Case #{{ event.case_number }} - {{ event.first_name }} {{ event.last_name }}
+                                    </p>
+                                    {% endif %}
+                                    {% if event.description %}
+                                    <p class="text-muted mb-0">{{ event.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <span class="badge bg-{{ 'primary' if event.event_type == 'hearing' else 'secondary' }}">
+                                    {{ event.event_type.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No upcoming events scheduled</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> Quick Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Event Types:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-gavel text-primary"></i> Hearing</li>
+                            <li><i class="bi bi-people text-info"></i> Meeting</li>
+                            <li><i class="bi bi-calendar-event text-secondary"></i> Other</li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Automatic Notifications:</h6>
+                        <p class="small text-muted">
+                            When you schedule a hearing for a case, the student will automatically receive an email notification with all the details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Event Modal -->
+<div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schedule New Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_calendar_event') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Event Title</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="event_type" class="form-label">Event Type</label>
+                                <select class="form-select" id="event_type" name="event_type" required>
+                                    <option value="hearing">Hearing</option>
+                                    <option value="meeting">Meeting</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="case_id" class="form-label">Related Case (Optional)</label>
+                        <select class="form-select" id="case_id" name="case_id">
+                            <option value="">Select a case (optional)</option>
+                            {% for case in cases %}
+                            <option value="{{ case.id }}">
+                                Case #{{ case.case_number }} - {{ case.first_name }} {{ case.last_name }} ({{ case.reg_number }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="start_datetime" class="form-label">Start Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="end_datetime" class="form-label">End Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" placeholder="Meeting room, office, etc.">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Additional details about the event"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="attendees" class="form-label">Attendees (Email Notifications)</label>
+                        <input type="text" class="form-control" id="attendees" name="attendees" placeholder="Additional attendees (comma-separated emails)">
+                        <small class="form-text text-muted">If linked to a case, the student will be automatically notified</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set minimum datetime to current time
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const minDateTime = now.toISOString().slice(0, 16);
+    
+    document.getElementById('start_datetime').min = minDateTime;
+    document.getElementById('end_datetime').min = minDateTime;
+    
+    // Auto-set end time when start time changes
+    document.getElementById('start_datetime').addEventListener('change', function() {
+        const startTime = new Date(this.value);
+        const endTime = new Date(startTime.getTime() + (60 * 60 * 1000)); // Add 1 hour
+        document.getElementById('end_datetime').value = endTime.toISOString().slice(0, 16);
+    });
+});
+</script>
+{% endblock %}

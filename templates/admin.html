@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: #1e3a8a;">Admin Panel</h1>
+    <div class="d-flex gap-2 mb-3">
+            <a href="{{ url_for('add_user') }}" class="btn btn-primary">Add User</a>
+            <a href="{{ url_for('system_settings') }}" class="btn btn-success">System Settings</a>
+            <a href="{{ url_for('email_settings') }}" class="btn btn-info">Email Settings</a>
+            <a href="{{ url_for('email_logs') }}" class="btn btn-info">View Email Logs</a>
+            <a href="{{ url_for('requests_log') }}" class="btn btn-primary">View Requests Log</a>
+                        <a href="{{ url_for('email_diagnostics') }}" class="btn btn-warning">Email Diagnostics</a>
+        </div>
+
+        {% if email_settings %}
+        <div class="alert alert-success">
+            <strong>Email Configuration Active:</strong> {{ email_settings.email_address }} 
+            <small>(Updated: {{ email_settings.updated_at[:16] }})</small>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <strong>Email Not Configured:</strong> <a href="{{ url_for('email_settings') }}">Configure email settings</a> to enable automatic notifications.
+        </div>
+        {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">System Users</h2>
+    </div>
+
+    {% if users %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Verdict Permission</th>
+                <th>Status</th>
+                <th>Login Attempts</th>
+                <th>Created</th>
+                {% if current_user.role == 'admin' %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <span class="status-badge {% if user.role == 'admin' %}status-blacklisted{% elif user.role == 'staff' %}status-hearing{% else %}status-pending{% endif %}">
+                        {{ user.role.title() }}
+                    </span>
+                </td>
+                <td>{{ user.department or 'N/A' }}</td>
+                <td>
+                    {% if user.role == 'admin' or user.can_give_verdict %}
+                        <span class="status-badge status-resolved">✓ Can Give Verdict</span>
+                    {% else %}
+                        <span class="status-badge status-pending">No Verdict Permission</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_active %}
+                        <span class="status-badge status-resolved">Active</span>
+                    {% else %}
+                        <span class="status-badge status-pending">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.failed_login_attempts and user.failed_login_attempts >= 5 %}
+                        <span class="status-badge status-blacklisted">🔒 Locked ({{ user.failed_login_attempts }}/5)</span>
+                    {% elif user.failed_login_attempts and user.failed_login_attempts > 0 %}
+                        <span class="status-badge status-pending">{{ user.failed_login_attempts }}/5</span>
+                    {% else %}
+                        <span class="status-badge status-resolved">0/5</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at[:10] if user.created_at else 'N/A' }}</td>
+                {% if current_user.role == 'admin' %}
+                <td>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                        {% if user.failed_login_attempts and user.failed_login_attempts >= 5 %}
+                        <form method="POST" action="{{ url_for('unlock_user', user_id=user.id) }}" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Unlock this user account?')">Unlock</button>
+                        </form>
+                        {% endif %}
+                        {% if user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this user? This action cannot be undone.')">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="text-center" style="padding: 2rem; color: #6b7280;">
+        <p>No users found.</p>
+        <a href="{{ url_for('add_user') }}" class="btn btn-primary mt-2">Add First User</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">System Information</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <strong>Database:</strong> SQLite
+            </div>
+            <div>
+                <strong>Version:</strong> 1.0.0
+            </div>
+            <div>
+                <strong>Environment:</strong> Development
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Database Backup Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Database Backup</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Automated Daily Backup</h6>
+                            <p class="text-muted">The system automatically creates database backups at midnight when new cases are created each day. Backup notifications are sent to the admin email address.</p>
+                            <p class="small text-info">
+                                <i class="fas fa-info-circle"></i> 
+                                Backups are only created on days when new disciplinary cases are recorded in the system.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <form method="POST" action="{{ url_for('manual_backup') }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-download"></i> Create Manual Backup
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Settings Section -->
+{% endblock %}
+<line_number>100</line_number>
+            </div>
+        </div>
+
+        <!-- External API Integration Section -->
+        <div class="card">
+            <div class="card-header">
+                <h3>External API Integration</h3>
+            </div>
+            <div class="card-body">
+                <p>External systems can integrate with the DMS using these API endpoints:</p>
+                
+                <div class="api-endpoint">
+                    <h5>Single Student Check</h5>
+                    <code>POST /api/external/check-student</code>
+                    <pre class="api-example">{
+  "reg_number": "R123456A",
+  "domain": "university.edu"
+}</pre>
+                    <p><strong>Response:</strong></p>
+                    <pre class="api-example">{
+  "exists": true,
+  "status": "active", // active, blacklisted, exonerated, not_found
+  "reg_number": "R123456A",
+  "total_cases": 2,
+  "requesting_domain": "university.edu",
+  "timestamp": "2024-01-01T12:00:00"
+}</pre>
+                </div>
+
+                <div class="api-endpoint">
+                    <h5>Batch Student Check</h5>
+                    <code>POST /api/external/batch-check</code>
+                    <pre class="api-example">{
+  "reg_numbers": ["R123456A", "R789012B"],
+  "domain": "university.edu"
+}</pre>
+                </div>
+
+                <div class="api-endpoint">
+                    <h5>Domain Verification</h5>
+                    <code>POST /api/external/verify-domain</code>
+                    <pre class="api-example">{
+  "domain": "university.edu"
+}</pre>
+                </div>
+
+                <div class="integration-notes">
+                    <h6>Integration Notes:</h6>
+                    <ul>
+                        <li>All requests must include <code>Content-Type: application/json</code></li>
+                        <li>Educational domains (.edu, .ac., university., college.) are pre-authorized</li>
+                        <li>Batch requests are limited to 100 registration numbers</li>
+                        <li>All API calls are logged for audit purposes</li>
+                        <li>Rate limiting may apply for high-volume usage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+</line_number>
+<line_number>10</line_number>
+        .api-endpoint {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .api-endpoint code {
+            background-color: #e9ecef;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #d63384;
+        }
+        .api-example {
+            background-color: #f1f3f4;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .integration-notes {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+        }
+        .integration-notes ul {
+            margin-bottom: 0;
+        }
+</line_number>

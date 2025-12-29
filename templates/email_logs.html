@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Email Logs - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Email Logs</h2>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">← Back to Admin</a>
+    </div>
+
+    <!-- Email Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ stats.total_emails }}</h5>
+                    <p class="card-text">Total Emails</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ stats.sent_count }}</h5>
+                    <p class="card-text">Successfully Sent</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ stats.failed_count }}</h5>
+                    <p class="card-text">Failed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ stats.pending_count }}</h5>
+                    <p class="card-text">Pending</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Logs Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Email History (Page {{ page }} of {{ total_pages }})</h5>
+        </div>
+        <div class="card-body">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Recipient</th>
+                            <th>Type</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Case #</th>
+                            <th>Sent By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.sent_at }}</td>
+                            <td>{{ log.recipient_email }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.recipient_type == 'student' %}badge-primary{% endif %}
+                                    {% if log.recipient_type == 'staff' %}badge-info{% endif %}
+                                    {% if log.recipient_type == 'test' %}badge-secondary{% endif %}
+                                    {% if log.recipient_type == 'general' %}badge-light{% endif %}
+                                ">
+                                    {{ log.recipient_type.title() }}
+                                </span>
+                            </td>
+                            <td>{{ log.subject[:50] }}{% if log.subject|length > 50 %}...{% endif %}</td>
+                            <td>
+                                {% if log.sent_status == 'sent' %}
+                                    <span class="badge badge-success">✓ Sent</span>
+                                {% elif log.sent_status == 'failed' %}
+                                    <span class="badge badge-danger">✗ Failed</span>
+                                {% elif log.sent_status == 'pending' %}
+                                    <span class="badge badge-warning">⏳ Pending</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ log.sent_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.case_number %}
+                                    <code>{{ log.case_number }}</code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.sent_by_username or 'System' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewEmailContent({{ log.id }}, '{{ log.subject }}', `{{ log.message|e }}`)">
+                                    View Content
+                                </button>
+                                {% if log.error_message %}
+                                <button class="btn btn-sm btn-outline-danger" onclick="showError('{{ log.error_message|e }}')">
+                                    View Error
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Email logs pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('email_logs', page=page-1) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ p }}</span>
+                        </li>
+                        {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('email_logs', page=p) }}">{{ p }}</a>
+                        </li>
+                        {% elif p == 4 and page > 6 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% elif p == total_pages - 3 and page < total_pages - 5 %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('email_logs', page=page+1) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted">No email logs found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Email Content Modal -->
+<div class="modal fade" id="emailContentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Email Content</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6>Subject:</h6>
+                <p id="emailSubject" class="font-weight-bold"></p>
+                <h6>Message:</h6>
+                <div id="emailContent" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="errorContent" class="alert alert-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewEmailContent(id, subject, content) {
+    document.getElementById('emailSubject').textContent = subject;
+    document.getElementById('emailContent').innerHTML = content;
+    $('#emailContentModal').modal('show');
+}
+
+function showError(errorMessage) {
+    document.getElementById('errorContent').textContent = errorMessage;
+    $('#errorModal').modal('show');
+}
+</script>
+
+<style>
+.badge {
+    font-size: 0.8em;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.card-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+}
+</style>
+{% endblock %}

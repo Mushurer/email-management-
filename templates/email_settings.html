@@ -1,0 +1,122 @@
+
+{% extends "base.html" %}
+
+{% block title %}Email Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Email Settings</h1>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Back to Admin</a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Outlook Email Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email_address">Official Email Address</label>
+                                    <input type="email" class="form-control" id="email_address" name="email_address" 
+                                           value="{{ settings.email_address if settings else '' }}" 
+                                           placeholder="admin@institution.edu" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email_password">Email Password</label>
+                                    <input type="password" class="form-control" id="email_password" name="email_password" 
+                                           placeholder="Enter email password" required>
+                                    <small class="text-muted">Use App Password for Office 365 accounts</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="sender_name">Sender Name</label>
+                            <input type="text" class="form-control" id="sender_name" name="sender_name" 
+                                   value="{{ settings.sender_name if settings else 'Disciplinary Management System' }}" 
+                                   required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="smtp_server">SMTP Server</label>
+                                    <input type="text" class="form-control" id="smtp_server" name="smtp_server" 
+                                           value="{{ settings.smtp_server if settings else 'smtp.gmail.com' }}" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="smtp_port">SMTP Port</label>
+                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                                           value="{{ settings.smtp_port if settings else 587 }}" 
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Save Email Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Test Email Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('test_email') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="form-group mb-3">
+                            <label for="test_email">Test Email Address</label>
+                            <input type="email" class="form-control" id="test_email" name="test_email" 
+                                   placeholder="test@example.com" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">Send Test Email</button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <h5>Configuration Guide:</h5>
+                    <ul class="small">
+                        <li>For Gmail, use App Password instead of regular password</li>
+                        <li>SMTP Server: smtp.gmail.com</li>
+                        <li>SMTP Port: 587</li>
+                        <li>Enable 2-Factor Authentication and generate App Password</li>
+                        <li>For Outlook: use smtp.office365.com (requires Modern Auth)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if settings %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3>Current Settings</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Email:</strong> {{ settings.email_address }}</p>
+                    <p><strong>Sender Name:</strong> {{ settings.sender_name }}</p>
+                    <p><strong>SMTP Server:</strong> {{ settings.smtp_server }}:{{ settings.smtp_port }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                    <p><strong>Updated:</strong> {{ settings.updated_at[:16] }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

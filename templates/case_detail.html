@@ -1,0 +1,178 @@
+
+{% extends "base.html" %}
+
+{% block title %}Case Details - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: #1e3a8a;">Case Details</h1>
+    <a href="{{ url_for('cases') }}" class="btn btn-secondary">Back to Cases</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Case Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Case Number:</strong> {{ case.case_number }}</p>
+                        <p><strong>Case Type:</strong> {{ case.case_type_name or 'N/A' }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="status-badge status-{{ case.status }}">
+                                {{ case.status.replace('_', ' ').title() }}
+                            </span>
+                        </p>
+                        <p><strong>Reported By:</strong> {{ case.reported_by_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Created:</strong> {{ case.created_at }}</p>
+                        <p><strong>Last Updated:</strong> {{ case.updated_at }}</p>
+                        {% if case.case_type_description %}
+                        <p><strong>Case Type Description:</strong> {{ case.case_type_description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Case Description</h2>
+            </div>
+            <div class="card-body">
+                <p style="white-space: pre-wrap;">{{ case.description }}</p>
+            </div>
+        </div>
+
+        {% if case.case_file %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Attached Documents</h2>
+            </div>
+            <div class="card-body">
+                <div class="document-attachment">
+                    <span style="font-size: 1.5rem; margin-right: 10px;">📎</span>
+                    <div>
+                        <strong>{{ case.case_file }}</strong>
+                        <br>
+                        <a href="{{ url_for('uploaded_file', filename=case.case_file) }}" class="btn btn-sm btn-primary" target="_blank">
+                            View Document
+                        </a>
+                        <a href="{{ url_for('uploaded_file', filename=case.case_file) }}" class="btn btn-sm btn-secondary" download>
+                            Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Student Information</h2>
+            </div>
+            <div class="card-body">
+                <p><strong>Registration Number:</strong> {{ case.student_reg_number }}</p>
+                {% if case.first_name %}
+                <p><strong>Name:</strong> {{ case.first_name }} {{ case.last_name }}</p>
+                <p><strong>Email:</strong> {{ case.student_email or 'N/A' }}</p>
+                <p><strong>Department:</strong> {{ case.student_department or 'N/A' }}</p>
+                {% else %}
+                <p><em>Detailed student information not available</em></p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if current_user.can_update_case_status() %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Update Status</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_case_status') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="case_id" value="{{ case.id }}">
+                    <div class="form-group">
+                        <label for="status">Case Status</label>
+                        <select name="status" class="form-select" id="status">
+                            <option value="pending" {% if case.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="waiting_hearing" {% if case.status == 'waiting_hearing' %}selected{% endif %}>Waiting Hearing</option>
+                            <option value="blacklisted" {% if case.status == 'blacklisted' %}selected{% endif %}>Blacklisted</option>
+                            <option value="exonerated" {% if case.status == 'exonerated' %}selected{% endif %}>Exonerated</option>
+                            <option value="resolved" {% if case.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Update Status</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if current_user.role == 'admin' %}
+        <div class="card mt-3" style="border-color: #dc3545;">
+            <div class="card-header" style="background-color: #f8d7da; color: #721c24;">
+                <h2 class="card-title">⚠️ Admin Actions</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('delete_case', case_id=case.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <p class="text-danger mb-3">
+                        <strong>Warning:</strong> Deleting this case will permanently remove all data including attached files. This action cannot be undone.
+                    </p>
+                    <button type="submit" class="btn btn-danger btn-sm" 
+                            onclick="return confirm('Are you sure you want to permanently delete case {{ case.case_number }}? This action cannot be undone and will remove all case data including attached files.')">
+                        🗑️ Delete Case
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.document-attachment {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.row {
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+.col-md-8, .col-md-6, .col-md-4 {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+@media (min-width: 768px) {
+    .col-md-8 {
+        width: 66.66667%;
+        float: left;
+    }
+    .col-md-6 {
+        width: 50%;
+        float: left;
+    }
+    .col-md-4 {
+        width: 33.33333%;
+        float: left;
+    }
+}
+
+.card-title {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}

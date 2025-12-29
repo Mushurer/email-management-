@@ -1,0 +1,250 @@
+
+{% extends "base.html" %}
+
+{% block title %}API Requests Log - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-activity"></i> API Requests Log</h2>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Admin
+        </a>
+    </div>
+
+    <!-- Request Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ stats.total_requests }}</h5>
+                    <p class="card-text">Total Requests</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ stats.successful_requests }}</h5>
+                    <p class="card-text">Successful</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ stats.failed_requests }}</h5>
+                    <p class="card-text">Failed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">{{ stats.unique_ips }}</h5>
+                    <p class="card-text">Unique IP Addresses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ stats.unique_domains }}</h5>
+                    <p class="card-text">Unique Domains</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-globe"></i> Recent Domains</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_domains %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Requests</th>
+                                    <th>Last Request</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for domain in recent_domains %}
+                                <tr>
+                                    <td><code>{{ domain.requesting_domain }}</code></td>
+                                    <td><span class="badge bg-primary">{{ domain.request_count }}</span></td>
+                                    <td><small>{{ domain.last_request[:16] }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No external domain requests yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-person-badge"></i> Most Checked Students</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_reg_numbers %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Registration Number</th>
+                                    <th>Checks</th>
+                                    <th>Last Check</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reg in top_reg_numbers %}
+                                <tr>
+                                    <td><strong>{{ reg.reg_number_checked }}</strong></td>
+                                    <td><span class="badge bg-info">{{ reg.check_count }}</span></td>
+                                    <td><small>{{ reg.last_check[:16] }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No student checks yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requests Log Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ul"></i> Request History 
+                (Page {{ page }} of {{ total_pages }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>IP Address</th>
+                            <th>Status</th>
+                            <th>Reg Number</th>
+                            <th>Domain</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td><small>{{ req.timestamp[:19] }}</small></td>
+                            <td>
+                                <code class="text-primary">{{ req.endpoint }}</code>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if req.method == 'GET' %}bg-success{% endif %}
+                                    {% if req.method == 'POST' %}bg-primary{% endif %}
+                                    {% if req.method == 'PUT' %}bg-warning{% endif %}
+                                    {% if req.method == 'DELETE' %}bg-danger{% endif %}
+                                ">
+                                    {{ req.method }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-monospace">{{ req.ip_address or 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if req.response_status == 200 %}bg-success{% endif %}
+                                    {% if req.response_status >= 400 %}bg-danger{% endif %}
+                                    {% if req.response_status >= 300 and req.response_status < 400 %}bg-warning{% endif %}
+                                ">
+                                    {{ req.response_status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if req.reg_number_checked %}
+                                    <strong>{{ req.reg_number_checked }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.requesting_domain and req.requesting_domain != 'direct' %}
+                                    <code class="text-info">{{ req.requesting_domain }}</code>
+                                {% else %}
+                                    <span class="text-muted">Direct</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted" title="{{ req.user_agent }}">
+                                    {{ req.user_agent[:30] if req.user_agent else 'N/A' }}{% if req.user_agent and req.user_agent|length > 30 %}...{% endif %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Requests log pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('requests_log', page=page-1) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in range(max(1, page-2), min(total_pages+1, page+3)) %}
+                    <li class="page-item {% if i == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('requests_log', page=i) }}">{{ i }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('requests_log', page=page+1) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-2">No API requests logged yet.</p>
+                <p class="text-muted small">Requests will appear here once external systems start using the API.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.text-monospace {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

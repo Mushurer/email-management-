@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Disciplinary Management System{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        /* Enhanced Blue Theme Variables */
+        :root {
+            --bs-body-bg: #f8faff;
+            --navbar-brand-color: #2563eb;
+            --primary-blue: #2563eb;
+            --primary-blue-light: #3b82f6;
+            --primary-blue-dark: #1d4ed8;
+            --accent-blue: #1e40af;
+            --blue-gradient-start: #2563eb;
+            --blue-gradient-end: #3b82f6;
+        }
+
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #0f172a;
+            --navbar-brand-color: #60a5fa;
+            --primary-blue: #60a5fa;
+            --primary-blue-light: #93c5fd;
+            --primary-blue-dark: #3b82f6;
+            --accent-blue: #60a5fa;
+            --blue-gradient-start: #60a5fa;
+            --blue-gradient-end: #93c5fd;
+        }
+
+        /* Custom status badges */
+        .status-pending { background: #fff3cd !important; color: #664d03 !important; }
+        .status-hearing { background: #cff4fc !important; color: #055160 !important; }
+        .status-blacklisted { background: #f8d7da !important; color: #842029 !important; }
+        .status-resolved { background: #d1e7dd !important; color: #0a3622 !important; }
+        .status-exonerated { background: #e2e3e5 !important; color: #41464b !important; }
+
+        /* Enhanced Blue Navbar */
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: black !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .navbar-nav .nav-link {
+            font-weight: bold !important;
+            color: black !important;
+        }
+
+        .navbar-dark {
+            background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue)) !important;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        /* Search functionality styling */
+        .search-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--bs-navbar-color);
+            font-size: 1.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(var(--bs-emphasis-color-rgb), 0.1);
+            color: var(--bs-navbar-hover-color);
+        }
+
+        /* Enhanced Blue Stats Cards */
+        .stat-card {
+            background: linear-gradient(135deg, var(--blue-gradient-start), var(--blue-gradient-end));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Blue Button Enhancements */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light));
+            border: none;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Blue Card Headers */
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light));
+            color: white;
+            border: none;
+        }
+
+        /* Blue Links */
+        a {
+            color: var(--primary-blue);
+        }
+
+        a:hover {
+            color: var(--primary-blue-dark);
+        }
+
+        .stat-card .card-body {
+            text-align: center;
+        }
+
+        /* Enhanced file preview */
+        .file-preview-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+        }
+
+        /* Health dashboard specific */
+        .health-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .health-ok { background-color: #198754; }
+        .health-warning { background-color: #ffc107; }
+        .health-error { background-color: #dc3545; }
+
+        /* Calendar integration styles */
+        .calendar-event {
+            background: var(--bs-primary);
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-shield-check"></i> DMS
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    {% if current_user.has_permission('staff') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('cases') }}">
+                            <i class="bi bi-folder2-open"></i> All Cases
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.role == 'student' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('cases') }}">
+                            <i class="bi bi-person-lines-fill"></i> My Cases
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_panel') }}">
+                            <i class="bi bi-gear"></i> Admin
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('health_dashboard') }}">
+                            <i class="bi bi-heart-pulse"></i> Health
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('api_documentation') }}">API Docs</a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Search functionality -->
+                <div class="search-container me-3">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search by reg number..." style="width: 200px;">
+                        <button class="btn btn-outline-light" type="button" id="searchBtn">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div id="searchResults" class="search-results d-none"></div>
+                </div>
+
+                <!-- Theme toggle -->
+                <button class="theme-toggle me-3" id="themeToggle" title="Toggle theme">
+                    <i class="bi bi-sun-fill" id="themeIcon"></i>
+                </button>
+
+                <!-- User info and logout -->
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">{{ current_user.role.title() }} Account</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('logout') }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-box-arrow-right"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container-fluid mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Theme Toggle & Search Functionality -->
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const html = document.documentElement;
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-bs-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = html.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                    html.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeIcon(newTheme);
+                });
+            }
+
+            function updateThemeIcon(theme) {
+                if (themeIcon) {
+                    themeIcon.className = theme === 'light' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+                }
+            }
+
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const searchResults = document.getElementById('searchResults');
+
+            if (searchInput && searchBtn) {
+                let searchTimeout;
+
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    const query = this.value.trim();
+
+                    if (query.length >= 2) {
+                        searchTimeout = setTimeout(() => performSearch(query), 300);
+                    } else {
+                        hideSearchResults();
+                    }
+                });
+
+                searchBtn.addEventListener('click', function() {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        performSearch(query);
+                    }
+                });
+
+                function performSearch(query) {
+                    fetch(`/api/search-cases?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            displaySearchResults(data);
+                        })
+                        .catch(error => {
+                            console.error('Search error:', error);
+                            hideSearchResults();
+                        });
+                }
+
+                function displaySearchResults(results) {
+                    if (results.length === 0) {
+                        searchResults.innerHTML = '<div class="p-2 text-muted">No cases found</div>';
+                    } else {
+                        searchResults.innerHTML = results.map(result => 
+                            `<div class="p-2 border-bottom">
+                                <a href="/cases/${result.id}" class="text-decoration-none">
+                                    <strong>Case #${result.case_number}</strong><br>
+                                    <small class="text-muted">${result.student_name} (${result.reg_number})</small>
+                                </a>
+                            </div>`
+                        ).join('');
+                    }
+                    searchResults.classList.remove('d-none');
+                }
+
+                function hideSearchResults() {
+                    searchResults.classList.add('d-none');
+                }
+
+                // Hide search results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                        hideSearchResults();
+                    }
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

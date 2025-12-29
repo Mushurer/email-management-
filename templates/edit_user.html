@@ -1,0 +1,119 @@
+
+{% extends "base.html" %}
+
+{% block title %}Edit User - DMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: #1e3a8a;">Edit User</h1>
+    <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Back to Admin</a>
+</div>
+
+<div class="card">
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">New Password (leave blank to keep current)</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Enter new password to change">
+        </div>
+
+        {% if user.failed_login_attempts and user.failed_login_attempts > 0 %}
+        <div class="alert alert-warning">
+            <strong>Account Status:</strong> 
+            This user has {{ user.failed_login_attempts }} failed login attempts.
+            {% if user.failed_login_attempts >= 8 %}
+            <strong>Account is LOCKED.</strong>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select class="form-select" id="role" name="role" required>
+                <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>Staff</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="department">Department</label>
+            <select class="form-select" id="department" name="department" required>
+                <option value="">Select Department</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}" {% if user.department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="can_give_verdict" name="can_give_verdict" {% if user.can_give_verdict %}checked{% endif %}>
+                <label class="form-check-label" for="can_give_verdict">
+                    Can Give Final Verdict (Blacklist/Exonerate cases)
+                </label>
+                <small style="color: #6b7280; display: block;">Only for staff members who should be able to make final decisions on cases</small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">
+                    Active User
+                </label>
+                <small style="color: #6b7280; display: block;">Uncheck to deactivate this user account</small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update User</button>
+            <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Admin-only Password Reset Section -->
+    {% if current_user.role == 'admin' %}
+    <div class="card mt-3" style="border-top: 3px solid #f59e0b;">
+        <div class="card-header">
+            <h3 style="color: #f59e0b; margin: 0;">Admin Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <h4>Reset Password</h4>
+                <p style="color: #6b7280;">Force reset this user's password and unlock their account.</p>
+                <form method="POST" action="{{ url_for('reset_user_password', user_id=user.id) }}" style="display: inline-block;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="form-group" style="max-width: 300px;">
+                        <label for="new_password">New Password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Reset password for this user?')">Reset Password</button>
+                </form>
+            </div>
+            
+            {% if user.failed_login_attempts and user.failed_login_attempts >= 8 %}
+            <div class="mb-3">
+                <h4>Unlock Account</h4>
+                <p style="color: #6b7280;">This account is locked due to failed login attempts.</p>
+                <form method="POST" action="{{ url_for('unlock_user', user_id=user.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Unlock this user account?')">Unlock Account</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

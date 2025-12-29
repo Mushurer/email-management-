@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 style="font-weight: bold; color: black;">API Documentation</h1>
+            <p class="lead">External API endpoints for integrating with the Disciplinary Management System</p>
+        </div>
+    </div>
+
+    <!-- Overview Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Overview</h3>
+                </div>
+                <div class="card-body">
+                    <p>The DMS External API allows other systems to check student disciplinary status and verify domain authorization. All endpoints use JSON for request and response data.</p>
+
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> Base URL</h5>
+                        <code>{{ request.url_root }}api/external/</code>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-shield-alt"></i> Authentication</h5>
+                        <p>Currently, these endpoints are publicly accessible but require domain verification for authorized use.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Registration Check -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Simple Registration Check (Yes/No)</h3>
+                    <span class="badge badge-primary">GET</span>
+                    <code>/api/external/check-exists/{reg_number}</code>
+                </div>
+                <div class="card-body">
+                    <p>Simple endpoint to check if a registration number exists in the database. Returns only yes/no answer.</p>
+
+                    <h5>URL Parameters</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>reg_number</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Student registration number (format: R123456A)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Example Request</h5>
+                    <pre class="bg-light p-3"><code>GET {{ request.url_root }}api/external/check-exists/R123456A</code></pre>
+
+                    <h5>Response</h5>
+                    <pre class="bg-light p-3"><code>{
+  "exists": "yes",
+  "reg_number": "R123456A",
+  "timestamp": "2024-09-24T08:30:00"
+}</code></pre>
+
+                    <div class="alert alert-info">
+                        <h6>Response Values</h6>
+                        <ul>
+                            <li><code>"yes"</code> - Registration number exists in the system</li>
+                            <li><code>"no"</code> - Registration number not found</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Single Student Check -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Check Single Student (Detailed)</h3>
+                    <span class="badge badge-success">POST</span>
+                    <code>/api/external/check-student</code>
+                </div>
+                <div class="card-body">
+                    <p>Check the disciplinary status of a single student by registration number.</p>
+
+                    <h5>Request Body</h5>
+                    <pre class="bg-light p-3"><code>{
+  "reg_number": "R123456A",
+  "domain": "university.edu"
+}</code></pre>
+
+                    <h5>Parameters</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>reg_number</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Student registration number (format: R123456A)</td>
+                            </tr>
+                            <tr>
+                                <td>domain</td>
+                                <td>string</td>
+                                <td>Yes</td>
+                                <td>Requesting system's domain name</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Response</h5>
+                    <pre class="bg-light p-3"><code>{
+  "exists": true,
+  "status": "active",
+  "reg_number": "R123456A",
+  "total_cases": 2,
+  "requesting_domain": "university.edu",
+  "timestamp": "2024-09-24T08:30:00"
+}</code></pre>
+
+                    <h5>Status Values</h5>
+                    <ul>
+                        <li><code>active</code> - Student exists with no blacklisting</li>
+                        <li><code>blacklisted</code> - Student has active disciplinary cases</li>
+                        <li><code>exonerated</code> - Student was previously blacklisted but exonerated</li>
+                        <li><code>inactive</code> - Student exists but is marked inactive</li>
+                        <li><code>not_found</code> - Student does not exist in the system</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Check -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Batch Student Check</h3>
+                    <span class="badge badge-success">POST</span>
+                    <code>/api/external/batch-check</code>
+                </div>
+                <div class="card-body">
+                    <p>Check multiple students at once (maximum 100 per request).</p>
+
+                    <h5>Request Body</h5>
+                    <pre class="bg-light p-3"><code>{
+  "reg_numbers": ["R123456A", "R789012B", "R111111C"],
+  "domain": "university.edu"
+}</code></pre>
+
+                    <h5>Response</h5>
+                    <pre class="bg-light p-3"><code>{
+  "results": [
+    {
+      "reg_number": "R123456A",
+      "exists": true,
+      "status": "active",
+      "total_cases": 1
+    },
+    {
+      "reg_number": "R789012B",
+      "exists": false,
+      "status": "not_found"
+    },
+    {
+      "reg_number": "R111111C",
+      "exists": false,
+      "status": "invalid_format",
+      "error": "Invalid registration number format"
+    }
+  ],
+  "total_checked": 3,
+  "requesting_domain": "university.edu",
+  "timestamp": "2024-09-24T08:30:00"
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domain Verification -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Domain Verification</h3>
+                    <span class="badge badge-success">POST</span>
+                    <code>/api/external/verify-domain</code>
+                </div>
+                <div class="card-body">
+                    <p>Verify if a domain is authorized to access the API.</p>
+
+                    <h5>Request Body</h5>
+                    <pre class="bg-light p-3"><code>{
+  "domain": "university.edu"
+}</code></pre>
+
+                    <h5>Response</h5>
+                    <pre class="bg-light p-3"><code>{
+  "domain": "university.edu",
+  "authorized": true,
+  "message": "Domain verification complete",
+  "timestamp": "2024-09-24T08:30:00"
+}</code></pre>
+
+                    <div class="alert alert-info">
+                        <h6>Authorized Domains</h6>
+                        <p>Currently authorized domain patterns include:</p>
+                        <ul>
+                            <li>.edu domains</li>
+                            <li>.ac. domains</li>
+                            <li>university. domains</li>
+                            <li>college. domains</li>
+                            <li>school. domains</li>
+                            <li>education.gov domains</li>
+                            <li>moe.gov domains</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Internal API Endpoints -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Internal API Endpoints</h3>
+                </div>
+                <div class="card-body">
+                    <p>These endpoints are used internally by the DMS system and require authentication.</p>
+
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                                <th>Auth Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/check-registration/{reg_number}</code></td>
+                                <td>Simple registration check</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/check-registration-detailed/{reg_number}</code></td>
+                                <td>Detailed student information</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/student/{reg_number}</code></td>
+                                <td>Get student data for forms</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/search-cases</code></td>
+                                <td>Search cases by query</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/health</code></td>
+                                <td>System health check</td>
+                                <td>No</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-primary">GET</span></td>
+                                <td><code>/api/daily-backup-check</code></td>
+                                <td>Trigger backup check</td>
+                                <td>No</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Handling -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Error Handling</h3>
+                </div>
+                <div class="card-body">
+                    <h5>HTTP Status Codes</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Status Code</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>200</td>
+                                <td>Success</td>
+                            </tr>
+                            <tr>
+                                <td>400</td>
+                                <td>Bad Request - Invalid input or missing parameters</td>
+                            </tr>
+                            <tr>
+                                <td>403</td>
+                                <td>Forbidden - Unauthorized access</td>
+                            </tr>
+                            <tr>
+                                <td>500</td>
+                                <td>Internal Server Error</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Error Response Format</h5>
+                    <pre class="bg-light p-3"><code>{
+  "error": "Description of the error",
+  "timestamp": "2024-09-24T08:30:00"
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Examples -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Code Examples</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Python Example</h5>
+                            <pre class="bg-light p-3"><code>import requests
+import json
+
+url = "{{ request.url_root }}api/external/check-student"
+payload = {
+    "reg_number": "R123456A",
+    "domain": "university.edu"
+}
+headers = {"Content-Type": "application/json"}
+
+response = requests.post(url, data=json.dumps(payload), headers=headers)
+result = response.json()
+print(result)</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>JavaScript Example</h5>
+                            <pre class="bg-light p-3"><code>const url = "{{ request.url_root }}api/external/check-student";
+const payload = {
+    reg_number: "R123456A",
+    domain: "university.edu"
+};
+
+fetch(url, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+})
+.then(response => response.json())
+.then(data => console.log(data));</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Limiting -->
+    <div class="row mt-4 mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Rate Limiting & Best Practices</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Current Limits</h5>
+                            <ul>
+                                <li>Batch requests: Maximum 100 registration numbers per request</li>
+                                <li>No specific rate limiting implemented yet</li>
+                                <li>All requests are logged for audit purposes</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Best Practices</h5>
+                            <ul>
+                                <li>Use batch endpoints for multiple checks</li>
+                                <li>Include your domain for proper audit tracking</li>
+                                <li>Handle errors gracefully</li>
+                                <li>Cache results when appropriate</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    font-size: 0.8em;
+    margin-right: 10px;
+}
+pre code {
+    font-size: 0.9em;
+}
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

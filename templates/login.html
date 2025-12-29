@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Disciplinary Management System{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; background: white; padding: 2rem; border-radius: 8px; border: 1px solid #E2E8F0;">
+    <div class="text-center mb-3">
+        <h1 style="color: #1F2937; font-size: 2rem; margin-bottom: 0.5rem;">DMS Login</h1>
+        <p style="color: #6B7280;">Disciplinary Management System</p>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+    </form>
+
+</div>
+{% endblock %}

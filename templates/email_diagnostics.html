@@ -1,0 +1,153 @@
+
+{% extends "base.html" %}
+
+{% block title %}Email Diagnostics - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Email Diagnostics</h2>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">← Back to Admin</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Configuration Status</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Settings Configured:</strong></td>
+                            <td>
+                                {% if diagnostics.settings_configured %}
+                                    <span class="badge badge-success">✓ Yes</span>
+                                {% else %}
+                                    <span class="badge badge-danger">✗ No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>SMTP Server:</strong></td>
+                            <td><code>{{ diagnostics.smtp_server }}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SMTP Port:</strong></td>
+                            <td><code>{{ diagnostics.smtp_port }}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email Address:</strong></td>
+                            <td><code>{{ diagnostics.email_address }}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sender Name:</strong></td>
+                            <td>{{ diagnostics.sender_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Password Set:</strong></td>
+                            <td>
+                                {% if diagnostics.password_set %}
+                                    <span class="badge badge-success">✓ Yes</span>
+                                {% else %}
+                                    <span class="badge badge-danger">✗ No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Quick Test</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('test_email') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="form-group">
+                            <label>Test Email Address:</label>
+                            <input type="email" class="form-control" name="test_email" 
+                                   value="{{ settings.email_address if settings else '' }}" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Test Email</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Email Failures</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_failures %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for failure in recent_failures %}
+                        <div class="alert alert-danger alert-sm mb-2">
+                            <strong>{{ failure.recipient_email }}</strong><br>
+                            <small>{{ failure.sent_at }}</small><br>
+                            <code style="font-size: 0.8em;">{{ failure.error_message }}</code>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent email failures found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Troubleshooting Tips</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Common Issues for Gmail:</h6>
+                    <ul class="small">
+                        <li><strong>Use App Password:</strong> For Gmail accounts, generate an app-specific password instead of your regular password</li>
+                        <li><strong>Enable 2FA:</strong> Two-factor authentication must be enabled to create app passwords</li>
+                        <li><strong>Check SMTP Settings:</strong>
+                            <ul>
+                                <li>Server: smtp.gmail.com</li>
+                                <li>Port: 587</li>
+                                <li>Encryption: STARTTLS</li>
+                            </ul>
+                        </li>
+                        <li><strong>Account Status:</strong> Ensure the Gmail account is active and not suspended</li>
+                        <li><strong>Less Secure Apps:</strong> App passwords are more secure than enabling less secure app access</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>To Generate Gmail App Password:</h6>
+                    <ol class="small">
+                        <li>Go to <a href="https://myaccount.google.com/security" target="_blank">Google Account Security settings</a></li>
+                        <li>Enable Two-step verification (2FA)</li>
+                        <li>Go to App passwords section</li>
+                        <li>Select "Mail" from the dropdown or create custom name</li>
+                        <li>Copy the 16-character app password</li>
+                        <li>Use this password in the email settings (not your regular Gmail password)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.alert-sm {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.table td {
+    border-top: 1px solid #dee2e6;
+    padding: 0.5rem;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}

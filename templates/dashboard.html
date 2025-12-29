@@ -1,0 +1,272 @@
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="d-flex justify-between align-center mb-3">
+        <div>
+            <h1 style="color: #1F2937; margin-bottom: 0.5rem;">Dashboard</h1>
+            <p style="color: #6B7280; margin: 0;">Welcome back, {{ current_user.username }}</p>
+        </div>
+        <div class="header-actions">
+            <span style="color: #6B7280; font-size: 0.9rem;">{{ current_user.role.title() }} Dashboard</span>
+        </div>
+    </div>
+</div>
+
+
+<!-- Quick Actions Section -->
+{% if current_user.has_permission('staff') %}
+<div class="quick-actions-section mb-3">
+    <h2 style="color: #1F2937; margin-bottom: 1rem; font-size: 1.25rem;">Quick Actions</h2>
+    <div class="actions-grid">
+        <div class="action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <span style="font-size: 1.5rem;">+</span>
+            </div>
+            <div class="action-content">
+                <h3>New Case</h3>
+                <p>Report a new disciplinary case</p>
+                <a href="{{ url_for('add_case') }}" class="btn btn-success btn-sm">Create Case</a>
+            </div>
+        </div>
+        
+        <div class="action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                <span style="font-size: 1.5rem;">📋</span>
+            </div>
+            <div class="action-content">
+                <h3>View Cases</h3>
+                <p>Browse all cases in the system</p>
+                <a href="{{ url_for('cases') }}" class="btn btn-primary btn-sm">View All</a>
+            </div>
+        </div>
+        
+        <div class="action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <span style="font-size: 1.5rem;">⏳</span>
+            </div>
+            <div class="action-content">
+                <h3>Pending Cases</h3>
+                <p>Review cases awaiting verdict</p>
+                <a href="{{ url_for('cases') }}?status=pending" class="btn btn-primary btn-sm">View Pending</a>
+            </div>
+        </div>
+        {% if current_user.role == 'admin' %}
+        <div class="action-card">
+            <div class="action-icon" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                <span style="font-size: 1.5rem;">⚙️</span>
+            </div>
+            <div class="action-content">
+                <h3>Admin Panel</h3>
+                <p>Manage users and system settings</p>
+                <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary btn-sm">Manage</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Cases Section -->
+<div class="recent-cases-section">
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-between align-center">
+                <h2 class="card-title">Recent Cases</h2>
+                {% if current_user.has_permission('staff') %}
+                <a href="{{ url_for('cases') }}" class="btn btn-secondary btn-sm">View All Cases</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if recent_cases %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Case #</th>
+                        <th>Student</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Reported By</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in recent_cases %}
+                    <tr>
+                        <td><strong>{{ case.case_number }}</strong></td>
+                        <td>
+                            {% if case.first_name %}
+                                {{ case.first_name }} {{ case.last_name }}
+                                <br><small style="color: #6b7280;">{{ case.student_reg_number }}</small>
+                            {% else %}
+                                {{ case.student_reg_number }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="case-type-badge">{{ case.case_type_name or 'N/A' }}</span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ case.status }}">
+                                {{ case.status.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>{{ case.reported_by_name or 'N/A' }}</td>
+                        <td>{{ case.created_at[:10] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No Cases Yet</h3>
+            <p>There are no cases to display at the moment.</p>
+            {% if current_user.has_permission('staff') %}
+            <a href="{{ url_for('add_case') }}" class="btn btn-primary mt-2">Create First Case</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Dashboard specific styles */
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.header-actions .btn {
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+}
+
+.stats-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    margin-bottom: 2rem;
+}
+
+.quick-actions-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    margin-bottom: 2rem;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.action-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #CBD5E1;
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.action-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1e3a8a;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.action-content p {
+    margin: 0 0 1rem 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.recent-cases-section .card {
+    border: 1px solid #E2E8F0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.case-type-badge {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stats-section, .quick-actions-section {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
